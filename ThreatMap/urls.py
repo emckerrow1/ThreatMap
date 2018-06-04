@@ -18,4 +18,5 @@ from MapGUI import views
 
 urlpatterns = [
     url(r'^$', views.threat_map),
+    url(r'^ajax/process_ip/$', views.ajax_process_ip),
 ]

@@ -1,0 +1,80 @@
+<div>Processed: <span id='ips-processed'>0</span>/{{ips|length}}</div>
+
+<div id='errors' style="color:red;"></div>
+<div id='map'></div>
+
+<script src="https://code.jquery.com/jquery-3.1.0.min.js"></script>
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+<script type="text/javascript">
+	var map = $('#map');
+
+	var data = [{
+        type: 'scattergeo',
+        mode: 'markers',
+        lat: [],
+        lon: [],
+        text: [],
+        marker: {
+            size: [],
+            color: [],
+            cmin: 0,
+            cmax: 50,
+            colorscale: 'Jet',
+            colorbar: {
+                title: 'Abuse Count',
+            },
+            line: {
+                color: 'black'
+            }
+        }
+    }];
+
+    var layout = {
+        'geo': {
+            'scope': 'world',
+            'resolution': 50
+        }
+    };
+
+
+	$(document).ready(function() {
+		var process_errors = 0;
+		{% for ip in ips %}
+			$.ajax({
+				url: '/ajax/process_ip/',
+				data: {
+					'ip': '{{ip}}'
+				},
+				dataType: 'json',
+				success: function (response_data) {
+					if (response_data['geo'] != null) {
+					console.log('{{ip}} -', response_data['abuse']['count']);
+					data[0]['lat'].push(response_data['geo']['latitude']);
+					data[0]['lon'].push(response_data['geo']['longitude']);
+					data[0]['text'].push(response_data['geo']['ip']);
+					data[0]['marker']['size'].push(response_data['abuse']['count']);
+					data[0]['marker']['color'].push(response_data['abuse']['count']);
+					} else {
+						process_errors++;
+						console.log('{{ip}} - No abuse report', process_errors);
+					}
+					var process_count = parseInt($('#ips-processed').html());
+					process_count = process_count+1;
+					$('#ips-processed').html(process_count);
+
+					{% if forloop.last %}
+						Plotly.newPlot('map', data, layout);
+						if (process_errors > 0){
+							$('#errors').html(process_errors+' IP address(es) failed to process.')
+						}
+
+					{% endif %}
+				}
+			});
+		{% endfor %}
+		console.log(data);
+	});
+
+</script>
